@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test:onboarding": "node --test script/onboarding.test.mjs",
+    "test:step-up": "node --test script/step-up.test.mjs",
     "preview": "vite preview",
     "i18n:sync": "node ./script/i18n-sync.mjs",
     "i18n:sync:dry": "node ./script/i18n-sync.mjs --dry-run"
