@@ -13,10 +13,11 @@ import { Dialog, Flex, Button } from "@radix-ui/themes";
 import { UserAgentHelper } from "@/utils/UserAgentHelper";
 import Loading from "@/components/loading";
 type Resp = {
-  current: string;
   data: Array<{
+    // 服务端只返回会话 token 的哈希前缀（不可逆），不再返回明文 token。
+    id: string;
+    current: boolean;
     uuid: string;
-    session: string;
     user_agent: string;
     ip: string;
     login_method: string;
@@ -49,11 +50,12 @@ export default function Sessions() {
   }, []);
 
   function deleteSession(sessionId: string) {
-    const isCurrent = sessionId === sessions?.current;
+    const isCurrent =
+      sessions?.data.some((s) => s.id === sessionId && s.current) ?? false;
     fetch("/api/admin/session/remove", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session: sessionId }),
+      body: JSON.stringify({ id: sessionId }),
     })
       .then((response) => response.json())
       .then((data) => {
@@ -65,7 +67,7 @@ export default function Sessions() {
           }
           setSessions((prev) => ({
             ...prev!,
-            data: prev?.data.filter((s) => s.session !== sessionId) || [],
+            data: prev?.data.filter((s) => s.id !== sessionId) || [],
           }));
         } else {
           console.error("Failed to delete session:", data);
@@ -146,14 +148,14 @@ export default function Sessions() {
           </TableHeader>
           <TableBody>
             {sessions.data.map((s) => {
-              const isCurrent = s.session === sessions.current;
+              const isCurrent = s.current;
               return (
-                <TableRow key={s.uuid} className="km-session-item">
+                <TableRow key={s.id} className="km-session-item">
                   <TableCell>
                     <Dialog.Root>
                       <Dialog.Trigger>
                         <label className="hover:underline cursor-pointer">
-                          {s.session.slice(0, 8)}...
+                          {s.id.slice(0, 8)}...
                           {isCurrent && (
                             <span className="ml-2 text-sm text-blue-600">
                               {t("sessions.current")}
@@ -169,7 +171,7 @@ export default function Sessions() {
                           <label className="text-base font-bold">
                             {t("sessions.session_id")}
                           </label>
-                          <label className="text-sm">{s.session}</label>
+                          <label className="text-sm">{s.id}</label>
                           <label className="text-base font-bold">
                             IP / {t("sessions.latest_ip")}
                           </label>
@@ -257,7 +259,7 @@ export default function Sessions() {
                           <Dialog.Trigger>
                             <Button
                               color="red"
-                              onClick={() => deleteSession(s.session)}
+                              onClick={() => deleteSession(s.id)}
                             >
                               {t("common.delete")}
                             </Button>
