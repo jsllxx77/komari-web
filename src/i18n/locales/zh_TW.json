@@ -1620,5 +1620,18 @@
     "mode": "顯示模式"
   },
   "warn_https": "當前連線不是 HTTPS！您的敏感資料存在嚴重風險。請立即採取措施確保連線安全！複製操作可能無法使用！",
-  "warn_websocket": "RPC2 請求失敗，請檢查網路連線或伺服器狀態！"
+  "warn_websocket": "RPC2 請求失敗，請檢查網路連線或伺服器狀態！",
+  "step_up": {
+    "title": "兩步驟驗證",
+    "description": "這是敏感操作，請輸入驗證器 App 中的驗證碼。驗證通過後 10 分鐘內不會再次詢問。",
+    "code_required": "請輸入驗證碼",
+    "invalid_code": "驗證碼錯誤或已被使用，請重試",
+    "failed": "驗證失敗",
+    "verify": "驗證",
+    "verifying": "驗證中...",
+    "reveal": "顯示",
+    "reveal_command": "顯示安裝指令",
+    "reveal_command_hint": "自動發現金鑰已隱藏，顯示安裝指令需要先完成兩步驟驗證。",
+    "secret_unchanged": "金鑰處於隱藏狀態，未做修改"
+  }
 }

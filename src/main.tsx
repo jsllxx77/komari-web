@@ -26,6 +26,12 @@ import { OfflineIndicator } from "./components/OfflineIndicator";
 import { Toaster } from "./components/ui/sonner";
 import { RPC2Provider } from "./contexts/RPC2Context";
 import { NodeListProvider } from "./contexts/NodeListContext";
+import StepUpDialog from "./components/StepUpDialog";
+import { installStepUpFetch } from "./lib/stepUp";
+
+// 敏感管理接口要求近期通过 2FA 时自动弹出验证码框并重试。
+installStepUpFetch();
+
 const App = () => {
   const restrictedPath = window.location.pathname.replace(/\/$/, "");
   const isRestrictedGuideRoute = [
@@ -90,6 +96,7 @@ const App = () => {
           {isRestrictedGuideRoute ? (
             <>
               <Toaster />
+              <StepUpDialog />
               {routing}
             </>
           ) : (
@@ -97,6 +104,7 @@ const App = () => {
               <PublicInfoProvider>
                 <NodeListProvider>
                   <Toaster />
+                  <StepUpDialog />
                   <OfflineIndicator />
                   {routing}
                   <PWAInstallPrompt />

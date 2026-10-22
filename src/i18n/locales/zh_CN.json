@@ -1645,5 +1645,18 @@
     "mode": "显示模式"
   },
   "warn_https": "当前连接不是 HTTPS！您的敏感数据存在严重风险。请立即采取措施确保连接安全！复制操作可能无法使用！",
-  "warn_websocket": "RPC2 请求失败，请检查网络连接或服务器状态！"
+  "warn_websocket": "RPC2 请求失败，请检查网络连接或服务器状态！",
+  "step_up": {
+    "title": "两步验证",
+    "description": "这是敏感操作，请输入验证器 App 中的验证码。验证通过后 10 分钟内不再重复询问。",
+    "code_required": "请输入验证码",
+    "invalid_code": "验证码错误或已被使用，请重试",
+    "failed": "验证失败",
+    "verify": "验证",
+    "verifying": "验证中...",
+    "reveal": "显示",
+    "reveal_command": "显示安装命令",
+    "reveal_command_hint": "自动发现密钥已隐藏，显示安装命令需要先完成两步验证。",
+    "secret_unchanged": "密钥处于隐藏状态，未做修改"
+  }
 }

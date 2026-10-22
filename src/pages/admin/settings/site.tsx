@@ -16,6 +16,7 @@ import { DownloadIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import UploadDialog from "@/components/UploadDialog";
 import { createChunkUploadTask, type ChunkUploadTask } from "@/lib/chunkUpload";
+import { ensureStepUp, StepUpCancelledError } from "@/lib/stepUp";
 
 export default function SiteSettings() {
   const { t } = useTranslation();
@@ -403,8 +404,22 @@ export default function SiteSettings() {
       <SettingCardIconButton
         title={t("settings.site.backup_download")}
         description={t("settings.site.backup_download_description")}
-        onClick={() => {
-          window.open("/api/admin/download/backup", "_blank");
+        onClick={async () => {
+          // 备份包含全部密钥，下载属于敏感操作：先在当前页面完成 2FA 验证，
+          // 再开始下载（下载请求本身无法弹出验证框）。
+          try {
+            await ensureStepUp();
+          } catch (error) {
+            if (error instanceof StepUpCancelledError) return;
+          }
+          // 经过异步等待后 window.open 可能被弹窗拦截，改用 download 链接；
+          // 服务端以附件形式返回，当前页面不会跳走。
+          const link = document.createElement("a");
+          link.href = "/api/admin/download/backup";
+          link.download = "";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
         }}
         className="km-setting-card"
       >

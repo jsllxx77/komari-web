@@ -1615,5 +1615,18 @@
     "mode": "View Mode"
   },
   "warn_https": "The current connection is not HTTPS! Your sensitive data is at serious risk. Take immediate action to secure the connection! Copy may not available!",
-  "warn_websocket": "RPC2 request failed, please check the network connection or server status!"
+  "warn_websocket": "RPC2 request failed, please check the network connection or server status!",
+  "step_up": {
+    "title": "Two-factor verification",
+    "description": "This action is sensitive. Enter the code from your authenticator app. You won't be asked again for the next 10 minutes.",
+    "code_required": "Please enter the verification code",
+    "invalid_code": "Invalid or already used code, please try again",
+    "failed": "Verification failed",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "reveal": "Show",
+    "reveal_command": "Show install command",
+    "reveal_command_hint": "The auto-discovery key is hidden. Showing the install command requires two-factor verification.",
+    "secret_unchanged": "The key is hidden and was not changed"
+  }
 }

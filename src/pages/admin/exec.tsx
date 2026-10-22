@@ -284,10 +284,8 @@ const ExecContent = () => {
             return;
         }
 
-        if (twoFaEnabled && !twoFaCode.trim()) {
-            toast.error(t("account.otp_empty_error"));
-            return;
-        }
+        // 2FA 验证码可以留空：会话在近期验证窗口内时服务端直接放行，
+        // 否则全局拦截会弹出验证框后自动重试。
 
         // 清理之前的轮询
         clearPolling();
@@ -306,7 +304,7 @@ const ExecContent = () => {
                     // Remote exec treats whitespace as script content, so preserve the user's exact input.
                     command,
                     clients: selectedNodes,
-                    "2fa_code": twoFaCode,
+                    ...(twoFaCode.trim() ? { "2fa_code": twoFaCode.trim() } : {}),
                 }),
             });
 
@@ -471,7 +469,7 @@ const ExecContent = () => {
                         ) : null}
                         <Button
                             onClick={executeCommand}
-                            disabled={executing || !command.trim() || selectedNodes.length === 0 || (twoFaEnabled && !twoFaCode.trim())}
+                            disabled={executing || !command.trim() || selectedNodes.length === 0}
                         >
                             {executing ? (
                                 <>

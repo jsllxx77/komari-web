@@ -1645,5 +1645,18 @@
     "mode": "Mode Tampilan"
   },
   "warn_https": "Koneksi saat ini bukan HTTPS! Data sensitif Anda berisiko. Amankan koneksi sekarang! Fitur salin mungkin tidak tersedia!",
-  "warn_websocket": "Permintaan RPC2 gagal, periksa koneksi jaringan atau status server!"
+  "warn_websocket": "Permintaan RPC2 gagal, periksa koneksi jaringan atau status server!",
+  "step_up": {
+    "title": "Verifikasi dua langkah",
+    "description": "Tindakan ini sensitif. Masukkan kode dari aplikasi autentikator Anda. Anda tidak akan diminta lagi selama 10 menit.",
+    "code_required": "Masukkan kode verifikasi",
+    "invalid_code": "Kode salah atau sudah digunakan, silakan coba lagi",
+    "failed": "Verifikasi gagal",
+    "verify": "Verifikasi",
+    "verifying": "Memverifikasi...",
+    "reveal": "Tampilkan",
+    "reveal_command": "Tampilkan perintah instalasi",
+    "reveal_command_hint": "Kunci auto-discovery disembunyikan. Menampilkan perintah instalasi memerlukan verifikasi dua langkah.",
+    "secret_unchanged": "Kunci tersembunyi dan tidak diubah"
+  }
 }

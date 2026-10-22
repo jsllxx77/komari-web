@@ -1,3 +1,5 @@
+import { isStepUpRequiredError, requestStepUp } from "./stepUp";
+
 export const CHUNK_SIZE = 5 * 1024 * 1024;
 const WORKER_COUNT = 5;
 const MAX_ATTEMPTS = 4;
@@ -137,7 +139,15 @@ export function createChunkUploadTask(basePath: string): ChunkUploadTask {
               updateProgress();
               return;
             } catch (error) {
-              if (cancelled || attempt === MAX_ATTEMPTS - 1) throw error;
+              if (cancelled) throw error;
+              // 上传耗时超过敏感操作验证窗口：分片走 XHR，不经过全局 fetch 拦截，
+              // 这里自行弹框验证后重传本分片，不占用重试次数。
+              if (isStepUpRequiredError(error)) {
+                await requestStepUp();
+                attempt -= 1;
+                continue;
+              }
+              if (attempt === MAX_ATTEMPTS - 1) throw error;
             }
           }
         };

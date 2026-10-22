@@ -12,6 +12,7 @@ import {
   remoteBasename,
   remoteDirname,
 } from "./fileManagerApi";
+import { isStepUpRequiredError, requestStepUp } from "@/lib/stepUp";
 
 export interface RemoteUploadProgress {
   id: string;
@@ -412,6 +413,16 @@ export const useRemoteFileUpload = (
             if (controller.signal.aborted) throw error;
             if (resizeRequested) {
               throw resizeError ?? new ChunkTooLargeError(chunkItem.size, error);
+            }
+            // 上传时间超过敏感操作验证窗口：分片请求走 XHR，不经过全局 fetch
+            // 拦截，这里自行弹框验证后重传本分片（不计入重试次数）。
+            if (
+              error instanceof UploadRequestError &&
+              error.status === 401 &&
+              isStepUpRequiredError(error)
+            ) {
+              await requestStepUp();
+              continue;
             }
             if (isPayloadTooLargeError(error)) {
               // A proxy has rejected this request body. Abort all sibling

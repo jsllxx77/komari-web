@@ -10,6 +10,23 @@ import type {
 } from "../types/rpc2";
 import { RPC2ConnectionState } from "../types/rpc2";
 import i18n from "../i18n/config";
+import { withStepUp } from "./stepUp";
+
+/**
+ * 服务端返回的 JSON-RPC 错误（区别于连接/超时等传输错误）。
+ * message 保持原有的 "RPC Error <code>: <message>" 格式，兼容现有调用方。
+ */
+export class RPC2ResponseError extends Error {
+  readonly code: number;
+  readonly data?: unknown;
+
+  constructor(code: number, message: string, data?: unknown) {
+    super(`RPC Error ${code}: ${message}`);
+    this.name = "RPC2ResponseError";
+    this.code = code;
+    this.data = data;
+  }
+}
 
 /**
  * RPC2 客户端类
@@ -214,6 +231,29 @@ export class RPC2Client {
     params?: TParams,
     options: RPC2CallOptions = {}
   ): Promise<TResult> {
+    return withStepUp(() =>
+      this.rawCallViaWebSocket<TParams, TResult>(method, params, options),
+    );
+  }
+
+  /**
+   * 通过 HTTP POST 调用 RPC 方法
+   */
+  async callViaHTTP<TParams = any, TResult = any>(
+    method: string,
+    params?: TParams,
+    options: RPC2CallOptions = {}
+  ): Promise<TResult> {
+    return withStepUp(() =>
+      this.rawCallViaHTTP<TParams, TResult>(method, params, options),
+    );
+  }
+
+  private async rawCallViaWebSocket<TParams = any, TResult = any>(
+    method: string,
+    params?: TParams,
+    options: RPC2CallOptions = {}
+  ): Promise<TResult> {
     if (this.connectionState !== RPC2ConnectionState.CONNECTED) {
       throw new Error(i18n.t("rpc2.websocket_not_connected"));
     }
@@ -255,10 +295,7 @@ export class RPC2Client {
     });
   }
 
-  /**
-   * 通过 HTTP POST 调用 RPC 方法
-   */
-  async callViaHTTP<TParams = any, TResult = any>(
+  private async rawCallViaHTTP<TParams = any, TResult = any>(
     method: string,
     params?: TParams,
     options: RPC2CallOptions = {}
@@ -292,7 +329,11 @@ export class RPC2Client {
       const jsonResponse: JSONRPC2Response<TResult> = await response.json();
 
       if ("error" in jsonResponse) {
-        throw new Error(`RPC Error ${jsonResponse.error.code}: ${jsonResponse.error.message}`);
+        throw new RPC2ResponseError(
+          jsonResponse.error.code,
+          jsonResponse.error.message,
+          jsonResponse.error.data,
+        );
       }
 
       return jsonResponse.result;
@@ -393,19 +434,23 @@ export class RPC2Client {
     }
 
     // 策略：
-    // 1) WS 已连接 → 尝试 WS；失败则回退一次 HTTP
+    // 1) WS 已连接 → 尝试 WS；传输失败则回退一次 HTTP
     // 2) 其他状态（未连/连接中/重连中/错误）→ 直接 HTTP
-    if (this.connectionState === RPC2ConnectionState.CONNECTED) {
-      try {
-        return await this.callViaWebSocket(method, params, options);
-      } catch {
-        // 回退一次 HTTP
-        return this.callViaHTTP(method, params, options);
+    // 需要敏感操作验证时（withStepUp），弹框验证后整体重试一次。
+    return withStepUp(async () => {
+      if (this.connectionState === RPC2ConnectionState.CONNECTED) {
+        try {
+          return await this.rawCallViaWebSocket<TParams, TResult>(method, params, options);
+        } catch (error) {
+          // 服务端已经返回了 RPC 错误（包括需要 2FA），换 HTTP 重发只会得到同样的结果。
+          if (error instanceof RPC2ResponseError) throw error;
+          return this.rawCallViaHTTP<TParams, TResult>(method, params, options);
+        }
       }
-    }
 
-    // 未连或重连等情况下，直接使用 HTTP
-    return this.callViaHTTP(method, params, options);
+      // 未连或重连等情况下，直接使用 HTTP
+      return this.rawCallViaHTTP<TParams, TResult>(method, params, options);
+    });
   }
 
   private getWebSocketUrl(): string {
@@ -482,7 +527,7 @@ export class RPC2Client {
     }
 
     if ("error" in data) {
-      pending.reject(new Error(`RPC Error ${data.error.code}: ${data.error.message}`));
+      pending.reject(new RPC2ResponseError(data.error.code, data.error.message, data.error.data));
     } else {
       pending.resolve(data.result);
     }
