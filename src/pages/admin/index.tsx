@@ -85,6 +85,7 @@ import {
 import { useSettings } from "@/lib/api";
 import { SelectOrInput } from "@/components/ui/select-or-input";
 import { useRPC2Call } from "@/contexts/RPC2Context";
+import { StepUpCancelledError } from "@/lib/stepUp";
 
 
 const NodeDetailsPage = () => {
@@ -227,8 +228,37 @@ const AutoDiscoverySection = ({
   loading?: boolean;
 }) => {
   const { t } = useTranslation();
-  const adKey: string = settings?.auto_discovery_key || "";
-  const enabled = Boolean(adKey);
+  const { call } = useRPC2Call();
+  const storedKey: string = settings?.auto_discovery_key || "";
+  const enabled = Boolean(storedKey);
+  // 设置接口返回的密钥是打码值（"****" + 后 4 位）。生成安装命令需要明文，
+  // 由用户点击后通过敏感接口 admin:revealSecret 取回（会要求 2FA 验证）。
+  const keyIsMasked = storedKey.startsWith("****");
+  const [revealedKey, setRevealedKey] = React.useState<string | null>(null);
+  const [revealing, setRevealing] = React.useState(false);
+  const adKey: string = keyIsMasked ? revealedKey ?? "" : storedKey;
+  const commandReady = Boolean(adKey);
+
+  React.useEffect(() => {
+    setRevealedKey(null);
+  }, [storedKey]);
+
+  const revealKey = async () => {
+    setRevealing(true);
+    try {
+      const result = await call<{ key: string }, { key: string; value: string }>(
+        "admin:revealSecret",
+        { key: "auto_discovery_key" },
+      );
+      setRevealedKey(result?.value || null);
+    } catch (error) {
+      if (!(error instanceof StepUpCancelledError)) {
+        toast.error(error instanceof Error ? error.message : String(error));
+      }
+    } finally {
+      setRevealing(false);
+    }
+  };
 
   const [selectedPlatform, setSelectedPlatform] =
     React.useState<Platform>("linux");
@@ -1033,20 +1063,32 @@ const AutoDiscoverySection = ({
         <label className="text-sm font-bold">
           {t("admin.nodeTable.generatedCommand", "指令")}
         </label>
-        <TextArea
-          disabled
-          className="w-full"
-          style={{ minHeight: "80px" }}
-          value={generateCommand()}
-        />
+        {commandReady ? (
+          <TextArea
+            disabled
+            className="w-full"
+            style={{ minHeight: "80px" }}
+            value={generateCommand()}
+          />
+        ) : (
+          <Text size="2" color="gray">
+            {t("step_up.reveal_command_hint")}
+          </Text>
+        )}
       </Flex>
-      <Button
-        style={{ width: "100%" }}
-        onClick={() => copyToClipboard(generateCommand())}
-      >
-        <Copy size={16} />
-        {t("common.copy")}
-      </Button>
+      {commandReady ? (
+        <Button
+          style={{ width: "100%" }}
+          onClick={() => copyToClipboard(generateCommand())}
+        >
+          <Copy size={16} />
+          {t("common.copy")}
+        </Button>
+      ) : (
+        <Button style={{ width: "100%" }} disabled={revealing} onClick={revealKey}>
+          {t("step_up.reveal_command")}
+        </Button>
+      )}
     </Flex>
   );
 };

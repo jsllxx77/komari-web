@@ -11,6 +11,7 @@ import Loading from "@/components/loading";
 import React from "react";
 import { renderProviderInputs } from "@/utils/renderProviders";
 import { toast } from "sonner";
+import { isMaskedSecret, useRevealSecret } from "@/hooks/useRevealSecret";
 
 export default function SignOnSettings() {
   const { t } = useTranslation();
@@ -160,6 +161,7 @@ const ApiCard = () => {
   const { settings } = useSettings();
   const { t } = useTranslation();
   const [apiValues, setApiValues] = React.useState<string>(settings?.api_key || "" );
+  const { reveal, revealing } = useRevealSecret("api_key");
 
   // 生成32位随机字符串
   const generateRandomString = () => {
@@ -195,6 +197,11 @@ const ApiCard = () => {
             await updateSettingsWithToast({ api_key: "" }, t);
             return;
           }
+          if (isMaskedSecret(values)) {
+            // 仍是打码值：服务端会当作"不修改"，这里直接提示，避免误报长度错误。
+            toast.info(t("step_up.secret_unchanged"));
+            return;
+          }
           if (values.length < 12) {
             toast.error(t("settings.api.key_length_error"));
             return;
@@ -204,6 +211,18 @@ const ApiCard = () => {
       >
         <div className="flex flex-row gap-2 justify-start items-center">
           <Button variant="soft" color="green" onClick={handleGenerateApiKey}>{t('common.generate')}</Button>
+          {isMaskedSecret(apiValues) && (
+            <Button
+              variant="soft"
+              disabled={revealing}
+              onClick={async () => {
+                const value = await reveal();
+                if (value) setApiValues(value);
+              }}
+            >
+              {t("step_up.reveal")}
+            </Button>
+          )}
         </div>
       </SettingCardShortTextInput>
   )

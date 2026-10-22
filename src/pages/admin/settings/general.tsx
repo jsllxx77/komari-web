@@ -15,6 +15,7 @@ import {
 } from "@/components/admin/SettingCard";
 import React from "react";
 import { toast } from "sonner";
+import { isMaskedSecret, useRevealSecret } from "@/hooks/useRevealSecret";
 import Loading from "@/components/loading";
 
 export default function GeneralSettings() {
@@ -129,6 +130,7 @@ const ApiCard = ({ settings }: { settings: SettingsResponse }) => {
   const [apiValues, setApiValues] = React.useState<string>(
     settings?.auto_discovery_key || ""
   );
+  const { reveal, revealing } = useRevealSecret("auto_discovery_key");
 
   // 生成32位随机字符串
   const generateRandomString = () => {
@@ -165,6 +167,11 @@ const ApiCard = ({ settings }: { settings: SettingsResponse }) => {
           await updateSettingsWithToast({ auto_discovery_key: "" }, t);
           return;
         }
+        if (isMaskedSecret(values)) {
+          // 仍是打码值：服务端会当作"不修改"，这里直接提示，避免误报长度错误。
+          toast.info(t("step_up.secret_unchanged"));
+          return;
+        }
         if (values.length < 12) {
           toast.error(t("settings.api.key_length_error"));
           return;
@@ -176,6 +183,18 @@ const ApiCard = ({ settings }: { settings: SettingsResponse }) => {
         <Button variant="soft" color="green" onClick={handleGenerateApiKey}>
           {t("common.generate")}
         </Button>
+        {isMaskedSecret(apiValues) && (
+          <Button
+            variant="soft"
+            disabled={revealing}
+            onClick={async () => {
+              const value = await reveal();
+              if (value) setApiValues(value);
+            }}
+          >
+            {t("step_up.reveal")}
+          </Button>
+        )}
         <Button
           variant="soft"
           color="mint"
