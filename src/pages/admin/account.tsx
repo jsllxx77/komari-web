@@ -13,6 +13,8 @@ import {
 } from "@radix-ui/themes";
 import { Github, Globe, User } from "lucide-react";
 import Loading from "@/components/loading";
+import { ensureStepUp, StepUpCancelledError } from "@/lib/stepUp";
+import { postNavigate } from "@/lib/navigation";
 
 const Account = () => {
   return (
@@ -181,9 +183,12 @@ const InnerLayout = () => {
           }));
         }
       } else {
-        window.location.href = "/api/admin/oauth2/bind";
+        // 绑定第三方账号属于敏感操作：先完成 2FA 验证，再用 POST 跳转。
+        await ensureStepUp();
+        postNavigate("/api/admin/oauth2/bind");
       }
     } catch (error) {
+      if (error instanceof StepUpCancelledError) return;
       console.error("处理SSO认证失败:", error);
       toast.error(t("account_settings.sso_auth_failed"));
     }
@@ -386,8 +391,14 @@ const TwoFactorDisabled = () => {
       return;
     }
     setSaving(true);
-    fetch(`/api/admin/2fa/enable?code=${encodeURIComponent(code)}`, {
+    // 验证码放在请求头和请求体里，不再放进 URL（会被反代日志和 Referer 记录）。
+    fetch("/api/admin/2fa/enable", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-2FA-Code": code.trim(),
+      },
+      body: JSON.stringify({ "2fa_code": code.trim() }),
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -459,8 +470,13 @@ const TwoFactorEnabled = () => {
       return;
     }
     setSaving(true);
-    fetch(`/api/admin/2fa/disable?2fa_code=${encodeURIComponent(code)}`, {
+    fetch("/api/admin/2fa/disable", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-2FA-Code": code.trim(),
+      },
+      body: JSON.stringify({ "2fa_code": code.trim() }),
     })
       .then(async (response) => {
         if (!response.ok) {

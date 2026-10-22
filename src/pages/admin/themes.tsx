@@ -201,7 +201,9 @@ const ThemePage = () => {
       setSettingTheme(themeShort);
 
       // 先调用 API 设置主题
-      const response = await fetch(`/api/admin/theme/set?theme=${themeShort}`);
+      const response = await fetch(`/api/admin/theme/set?theme=${encodeURIComponent(themeShort)}`, {
+        method: "POST",
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

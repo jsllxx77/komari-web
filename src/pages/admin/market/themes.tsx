@@ -207,7 +207,7 @@ export default function ThemeMarketPage() {
   const setActiveTheme = async (theme: MarketTheme) => {
     setSettingTheme(theme.short);
     try {
-      await request(`/api/admin/theme/set?theme=${encodeURIComponent(theme.short)}`);
+      await request(`/api/admin/theme/set?theme=${encodeURIComponent(theme.short)}`, { method: "POST" });
       await refetchSettings();
       await refreshPublicInfo();
       refreshNavigation();
@@ -224,7 +224,7 @@ export default function ThemeMarketPage() {
     try {
       const wasActive = currentTheme === theme.short;
       if (wasActive) {
-        await request("/api/admin/theme/set?theme=default");
+        await request("/api/admin/theme/set?theme=default", { method: "POST" });
       }
       await request("/api/admin/theme/delete", {
         method: "POST",

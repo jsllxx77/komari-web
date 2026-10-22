@@ -40,6 +40,7 @@ import {
   THEME_CONFIGURATION_RAW,
   THEME_CONFIGURATION_REDIRECT,
 } from "@/utils/themeConfiguration";
+import { postNavigate } from "@/lib/navigation";
 
 // 将JSON配置转换为类型安全的菜单项数组 (基础静态菜单)
 const baseMenuItems = (menuConfig as { menu: MenuItem[] }).menu;
@@ -412,7 +413,8 @@ const AdminPanelBar = ({ content, onboardingReady = false }: AdminPanelBarProps)
   };
 
   function logout() {
-    window.open("/api/logout", "_self");
+    // 登出会改变服务端状态，用 POST 跳转（服务端返回 302 到首页）。
+    postNavigate("/api/logout");
   }
   return (
     <>
